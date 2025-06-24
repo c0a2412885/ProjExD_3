@@ -3,6 +3,7 @@ import random
 import sys
 import time
 import pygame as pg
+import math
 
 
 WIDTH = 1100  # ゲームウィンドウの幅
@@ -56,6 +57,7 @@ class Bird:
         self.img = __class__.imgs[(+5, 0)]
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = xy
+        self.dire = [+5, 0]
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -82,6 +84,8 @@ class Bird:
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.img = __class__.imgs[tuple(sum_mv)]
+        if sum_mv != [0, 0]:
+            self.dire = sum_mv
         screen.blit(self.img, self.rct)
 
 
@@ -98,7 +102,11 @@ class Beam:
         self.rct = self.img.get_rect()
         self.rct.centery = bird.rct.centery
         self.rct.left = bird.rct.right
-        self.vx, self.vy = +5, 0
+        self.vx, self.vy = bird.dire[0], bird.dire[1]
+        self.theta = math.atan2(-self.vy, self.vx)
+        self.img=pg.transform.rotozoom(self.img, math.degrees(self.theta), 1)
+        self.rct.centerx = bird.rct.centerx + bird.rct.width * self.vx / 5
+        self.rct.centery = bird.rct.centery + bird.rct.height * self.vy / 5
 
     def update(self, screen: pg.Surface):
         """
@@ -212,7 +220,10 @@ def main():
                     pg.display.update()
                     time.sleep(1)
                     return
-            
+        
+        for beam in beams:
+            if check_bound(beam.rct) != (True, True):
+                beams.remove(beam)
         bombs = [bomb for bomb in bombs if bomb is not None]
         beams = [beam for beam in beams if beam is not None]
         explosions = [explosion for explosion in explosions if explosion.life > 0]
